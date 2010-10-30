@@ -1,0 +1,11 @@
+this project is the implementation for the semantic web course at jku.
+
+the idea behind is to grab your twitter followers and their folowers and do some analytic:
+
+* what is the mean/max/min number of followers
+* what is the mean/max/min tweets per time slot (day, week, year)
+* what the is the relationship between the people i am following and the people they are following; especially what are the most common friends
+* when are the most tweets (in the morning, afternoon, evening, night)
+* in which location are the most followers (europe (germany, austria, ...), us, asia, ...)
+* what is the percentage of retweets in proportion to "normal" tweets
+* what is the distribution of different types of tweets (link to videos, link to images, retweets, ...)
