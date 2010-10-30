@@ -1,5 +1,7 @@
-.DS_Store
-**/.classpath
-**/.project
-**/target/**
-**/twitter.properties
+*.DS_Store
+*.classpath
+*.metadata
+*.settings
+*.project
+*target
+*twitter.properties
