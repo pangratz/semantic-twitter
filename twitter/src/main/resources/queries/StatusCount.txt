@@ -1,0 +1,8 @@
+PREFIX foaf: <FOAF_NS>
+PREFIX stweeter: <SEMANTIC_TWEETER_NS>
+PREFIX stweet: <SEMANTIC_TWEET_NS>
+SELECT ?name ?count
+WHERE {
+ ?x foaf:nick ?name .
+ ?x stweeter:statusCount ?count .
+}

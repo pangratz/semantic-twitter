@@ -18,6 +18,10 @@ import twitter4j.TwitterFactory;
 import twitter4j.User;
 import twitter4j.http.AccessToken;
 
+import com.hp.hpl.jena.ontology.ObjectProperty;
+import com.hp.hpl.jena.ontology.OntClass;
+import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -25,12 +29,143 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
+import com.hp.hpl.jena.sparql.vocabulary.FOAF;
+import com.hp.hpl.jena.vocabulary.XSD;
 
 /**
  * Hello world!
  * 
  */
-public class TwitterRDFExtractor {
+public class TwitterRDFExtractor implements Constants {
+
+	private static void add(OntModel model, Resource res, String ns, String localName, Object val, String typeURI) {
+		if (val != null) {
+			Property prop = model.getProperty(ns, localName);
+			Literal lit = model.createTypedLiteral(val, typeURI);
+			model.add(res, prop, lit);
+		}
+	}
+
+	@Deprecated
+	private static void addPropertyNode(Model model, Resource res, Property prop, RDFNode node) {
+		model.add(res, prop, node);
+	}
+
+	@Deprecated
+	private static void addPropertyNode(Model model, String ns, Resource res, String property, Object value) {
+		Property prop = ResourceFactory.createProperty(ns, property);
+		if (value instanceof Resource) {
+			addPropertyNode(model, res, prop, (Resource) value);
+		} else {
+			Literal node = ResourceFactory.createTypedLiteral(value);
+			addPropertyNode(model, res, prop, node);
+		}
+	}
+
+	private static void addTweeterProp(OntModel model, Resource res, String localName, Object val) {
+		String typeURI = createUri(SEMANTIC_TWEETER_NS, localName);
+		add(model, res, SEMANTIC_TWEETER_NS, localName, val, typeURI);
+	}
+
+	@Deprecated
+	private static void addTweeterPropertyNode(Model model, Resource res, String property, Object value) {
+		addPropertyNode(model, Constants.SEMANTIC_TWEETER_NS, res, property, value);
+	}
+
+	private static void addTweetProp(OntModel model, Resource res, String localName, Object val) {
+		String typeURI = createUri(SEMANTIC_TWEET_NS, localName);
+		add(model, res, SEMANTIC_TWEETER_NS, localName, val, typeURI);
+	}
+
+	@Deprecated
+	private static void addTweetPropertyNode(Model model, Resource res, String property, Object value) {
+		addPropertyNode(model, Constants.SEMANTIC_TWEET_NS, res, property, value);
+	}
+
+	private static OntModel createOntologyModel() {
+		OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_TRANS_INF);
+		model.setNsPrefix("foaf", Constants.FOAF_NS);
+		model.setNsPrefix("stweeter", Constants.SEMANTIC_TWEETER_NS);
+		model.setNsPrefix("stweet", Constants.SEMANTIC_TWEET_NS);
+
+		// Tweeter class
+		OntClass tweeterClass = model.createClass(createUri(SEMANTIC_TWEETER_NS, SEMANTIC_TWEETER_CLASS));
+		tweeterClass.setSuperClass(FOAF.Person);
+		tweeterClass.addLabel("a tweeter is a user on Twitter", "en");
+
+		// nick property
+		ObjectProperty nickProperty = model.createObjectProperty(createUri(SEMANTIC_TWEETER_NS, SEMANTIC_TWEETER_NICK), true);
+		nickProperty.addDomain(tweeterClass);
+		nickProperty.addRange(XSD.xstring);
+		nickProperty.addLabel("nick is the username of the tweeter on Twitter", "en");
+
+		// status count
+		ObjectProperty statusCountProperty = model.createObjectProperty(createUri(SEMANTIC_TWEETER_NS, SEMANTIC_TWEETER_STATUS_COUNT));
+		statusCountProperty.addDomain(tweeterClass);
+		statusCountProperty.addRange(XSD.xlong);
+		statusCountProperty.addLabel("number of statuses on Twitter", "en");
+
+		// time properties
+		ObjectProperty createdAtYearProperty = model.createObjectProperty(createUri(SEMANTIC_TWEETER_NS, SEMANTIC_TWEETER_CREATED_AT_YEAR));
+		createdAtYearProperty.addDomain(tweeterClass);
+		createdAtYearProperty.addDomain(XSD.xint);
+
+		ObjectProperty createdAtMonthProperty = model
+				.createObjectProperty(createUri(SEMANTIC_TWEETER_NS, SEMANTIC_TWEETER_CREATED_AT_MONTH));
+		createdAtMonthProperty.addDomain(tweeterClass);
+		createdAtMonthProperty.addDomain(XSD.xint);
+
+		ObjectProperty createdAtDayOfWeekProperty = model.createObjectProperty(createUri(SEMANTIC_TWEETER_NS,
+				SEMANTIC_TWEETER_CREATED_AT_DAY_OF_WEEK));
+		createdAtDayOfWeekProperty.addDomain(tweeterClass);
+		createdAtDayOfWeekProperty.addDomain(XSD.xint);
+
+		// Tweet properties
+		OntClass tweetClass = model.createClass(createUri(SEMANTIC_TWEET_NS, SEMANTIC_TWEET_CLASS));
+		tweetClass.addLabel("a tweet is a status message from a tweeter on Twitter", "en");
+
+		// has tweet
+		ObjectProperty hasTweetProperty = model.createObjectProperty(createUri(SEMANTIC_TWEETER_NS, Constants.SEMANTIC_TWEETER_HAS_TWEET));
+		hasTweetProperty.addDomain(tweeterClass);
+		hasTweetProperty.addRange(tweetClass);
+		hasTweetProperty.addLabel("a tweeter can have many tweets", "en");
+
+		// is retweet
+		ObjectProperty isRetweetProperty = model.createObjectProperty(createUri(SEMANTIC_TWEET_NS, SEMANTIC_TWEET_IS_RETWEET));
+		isRetweetProperty.addDomain(tweetClass);
+		isRetweetProperty.addRange(XSD.xboolean);
+
+		// status length
+		ObjectProperty statusLengthProperty = model.createObjectProperty(createUri(SEMANTIC_TWEET_NS, SEMANTIC_TWEET_STATUS_LENGHT));
+		statusLengthProperty.addDomain(tweetClass);
+		statusLengthProperty.addRange(XSD.xint);
+
+		// has urls
+		ObjectProperty hasUrlsProperty = model.createObjectProperty(createUri(SEMANTIC_TWEET_NS, SEMANTIC_TWEET_HAS_URLS));
+		hasUrlsProperty.addDomain(tweetClass);
+		hasUrlsProperty.addRange(XSD.xboolean);
+
+		// url
+		ObjectProperty urlProperty = model.createObjectProperty(createUri(SEMANTIC_TWEET_NS, SEMANTIC_TWEET_URL));
+		urlProperty.addDomain(tweetClass);
+		urlProperty.addRange(XSD.xstring);
+
+		// hash tag
+		ObjectProperty hashTagProperty = model.createObjectProperty(createUri(SEMANTIC_TWEET_NS, SEMANTIC_TWEET_HASH_TAG));
+		hashTagProperty.addDomain(tweetClass);
+		hashTagProperty.addRange(XSD.xstring);
+
+		return model;
+	}
+
+	private static String createUri(String ns, String localName) {
+		return ns + localName;
+	}
+
+	private static Resource createUserResource(OntModel model, User user) {
+		Resource clazz = model.getResource(createUri(SEMANTIC_TWEETER_NS, SEMANTIC_TWEETER_CLASS));
+		return model.createResource(Constants.SEMANTIC_TWEETER_NS + user.getScreenName(), clazz);
+	}
 
 	public static void main(String args[]) throws Exception {
 		Properties props = new Properties();
@@ -51,37 +186,31 @@ public class TwitterRDFExtractor {
 
 			User user = twitter.showUser(id);
 
-			Model userModel = ModelFactory.createDefaultModel();
-			userModel.setNsPrefix("foaf", Constants.FOAF_NS);
-			userModel.setNsPrefix("stweeter", Constants.SEMANTIC_TWEETER_NS);
-			userModel.setNsPrefix("stweet", Constants.SEMANTIC_TWEET_NS);
+			OntModel model = createOntologyModel();
 
-			Resource userIdRes = createUserResource(user);
-			Property nickProp = ResourceFactory.createProperty(Constants.FOAF_NS, "nick");
-			Literal nickLit = ResourceFactory.createTypedLiteral(user.getScreenName());
-			userModel.add(userIdRes, nickProp, nickLit);
+			Resource userIdRes = createUserResource(model, user);
 
-			addTweeterPropertyNode(userModel, userIdRes, "statusCount", user.getStatusesCount());
+			addTweeterProp(model, userIdRes, SEMANTIC_TWEETER_NICK, user.getScreenName());
+			addTweeterProp(model, userIdRes, SEMANTIC_TWEETER_STATUS_COUNT, user.getStatusesCount());
 
 			String location = user.getLocation();
-			if (location != null && !"".equals(location))
-				addTweeterPropertyNode(userModel, userIdRes, "location", location);
+			if (location != null && !"".equals(location)) {
+				addTweeterProp(model, userIdRes, SEMANTIC_TWEETER_LOCATION, location);
+			}
 
-			addTweeterPropertyNode(userModel, userIdRes, "followerCount", user.getFollowersCount());
-			addTweeterPropertyNode(userModel, userIdRes, "friendsCount", user.getFriendsCount());
-			addTweeterPropertyNode(userModel, userIdRes, "favoritesCount", user.getFavouritesCount());
+			addTweeterProp(model, userIdRes, SEMANTIC_TWEETER_FOLLOWER_COUNT, user.getFollowersCount());
+			addTweeterProp(model, userIdRes, SEMANTIC_TWEETER_FRIENDS_COUNT, user.getFriendsCount());
+			addTweeterProp(model, userIdRes, SEMANTIC_TWEETER_FAVOURITES_COUNT, user.getFavouritesCount());
 
 			Date createdDate = user.getCreatedAt();
 			Calendar cal = Calendar.getInstance();
 			cal.setTime(createdDate);
-			addTweeterPropertyNode(userModel, userIdRes, "createdAtYear", cal.get(Calendar.YEAR));
-			addTweeterPropertyNode(userModel, userIdRes, "createdAtMonth", cal.get(Calendar.MONTH));
-			addTweeterPropertyNode(userModel, userIdRes, "createdAtDay", cal.get(Calendar.DAY_OF_MONTH));
-			addTweeterPropertyNode(userModel, userIdRes, "createdAtDayOfWeek", cal.get(Calendar.DAY_OF_WEEK));
-			addTweeterPropertyNode(userModel, userIdRes, "createdAtTimestamp", cal.getTimeInMillis());
+			addTweeterProp(model, userIdRes, SEMANTIC_TWEETER_CREATED_AT_YEAR, cal.get(Calendar.YEAR));
+			addTweeterProp(model, userIdRes, SEMANTIC_TWEETER_CREATED_AT_MONTH, cal.get(Calendar.MONTH));
+			addTweeterProp(model, userIdRes, SEMANTIC_TWEETER_CREATED_AT_DAY_OF_WEEK, cal.get(Calendar.DAY_OF_WEEK));
 
-			addTweeterPropertyNode(userModel, userIdRes, "utcOffset", user.getUtcOffset());
-			addTweeterPropertyNode(userModel, userIdRes, "timezone", user.getTimeZone());
+			addTweeterProp(model, userIdRes, SEMANTIC_TWEETER_UTC_OFFSET, user.getUtcOffset());
+			addTweeterProp(model, userIdRes, SEMANTIC_TWEETER_TIMEZONE, user.getTimeZone());
 
 			// add all the tweets
 			ResponseList<Status> latestTweets = twitter.getUserTimeline(user.getId(), new Paging(1, user.getStatusesCount()));
@@ -92,81 +221,53 @@ public class TwitterRDFExtractor {
 				Resource statusRes = ResourceFactory.createResource(Constants.SEMANTIC_TWEET_NS + statusId);
 
 				Property hasTweetProp = ResourceFactory.createProperty(Constants.SEMANTIC_TWEETER_NS, "hasTweet");
-				userModel.add(userIdRes, hasTweetProp, statusRes);
+				model.add(userIdRes, hasTweetProp, statusRes);
 
-				addTweetPropertyNode(userModel, statusRes, "isRetweet", status.isRetweet());
-				addTweetPropertyNode(userModel, statusRes, "statusLength", status.getText().length());
+				addTweetProp(model, statusRes, SEMANTIC_TWEET_IS_RETWEET, status.isRetweet());
+				addTweetProp(model, statusRes, SEMANTIC_TWEET_STATUS_LENGHT, status.getText().length());
 
 				URL[] urls = status.getURLs();
 				boolean hasUrls = (urls != null) && (urls.length > 0);
-				addTweetPropertyNode(userModel, statusRes, "hasUrls", hasUrls);
+				addTweetProp(model, statusRes, SEMANTIC_TWEET_HAS_URLS, hasUrls);
 				for (URL url : urls) {
-					addTweetPropertyNode(userModel, statusRes, "url", url);
+					addTweetProp(model, statusRes, SEMANTIC_TWEET_URL, url);
 				}
 
 				String[] hashtags = status.getHashtags();
 				for (String hashTag : hashtags) {
-					addTweetPropertyNode(userModel, statusRes, "hasHashTag", hashTag);
+					addTweetProp(model, statusRes, SEMANTIC_TWEET_HASH_TAG, hashTag);
 				}
 
 				GeoLocation geoLocation = status.getGeoLocation();
 				boolean hasGeoLocation = (geoLocation != null);
-				addTweetPropertyNode(userModel, statusRes, "hasGeoLocation", hasGeoLocation);
+				addTweetProp(model, statusRes, SEMANTIC_TWEET_HAS_GEO_LOCATION, hasGeoLocation);
 				if (hasGeoLocation) {
-					addTweetPropertyNode(userModel, statusRes, "geoLocation", geoLocation);
+					addTweetProp(model, statusRes, SEMANTIC_TWEET_GEO_LOCATION, geoLocation);
 				}
 
 				User[] userMentions = status.getUserMentions();
 				boolean hasUserMentions = (userMentions != null) && (userMentions.length > 0);
-				addTweetPropertyNode(userModel, statusRes, "hasUserMentions", hasUserMentions);
+				addTweetProp(model, statusRes, SEMANTIC_TWEET_HAS_USER_MENTIONS, hasUserMentions);
 				for (User mentionedUser : userMentions) {
-					addTweetPropertyNode(userModel, statusRes, "mentionedUser", createUserResource(mentionedUser));
+					addTweetProp(model, statusRes, SEMANTIC_TWEET_MENTIONED_USER, createUserResource(model, mentionedUser));
 				}
 
 				Date createdAt = status.getCreatedAt();
 				Calendar tweetCal = Calendar.getInstance();
 				tweetCal.setTime(createdAt);
-				addTweetPropertyNode(userModel, statusRes, "tweetYear", tweetCal.get(Calendar.YEAR));
-				addTweetPropertyNode(userModel, statusRes, "tweetMonth", tweetCal.get(Calendar.MONTH));
-				addTweetPropertyNode(userModel, statusRes, "tweetDay", tweetCal.get(Calendar.DAY_OF_MONTH));
-				addTweetPropertyNode(userModel, statusRes, "tweetHour", tweetCal.get(Calendar.HOUR_OF_DAY));
-				addTweetPropertyNode(userModel, statusRes, "tweetMinute", tweetCal.get(Calendar.MINUTE));
-				addTweetPropertyNode(userModel, statusRes, "tweetTimestamp", tweetCal.getTimeInMillis());
+				addTweetProp(model, statusRes, SEMANTIC_TWEET_YEAR, tweetCal.get(Calendar.YEAR));
+				addTweetProp(model, statusRes, SEMANTIC_TWEET_MONTH, tweetCal.get(Calendar.MONTH));
+				addTweetProp(model, statusRes, SEMANTIC_TWEET_DAY_OF_WEEK, tweetCal.get(Calendar.DAY_OF_WEEK));
 			}
 
 			File userFile = new File("userModels", user.getScreenName() + ".xml");
-			userModel.write(new FileOutputStream(userFile));
+			model.write(new FileOutputStream(userFile));
+			model.write(System.out);
 
 			count++;
 
-			if (count >= 1)
+			if (count >= 2)
 				break;
 		}
-	}
-
-	private static Resource createUserResource(User user) {
-		return ResourceFactory.createResource(Constants.FOAF_NS + user.getId());
-	}
-
-	private static void addPropertyNode(Model model, String ns, Resource res, String property, Object value) {
-		Property prop = ResourceFactory.createProperty(ns, property);
-		if (value instanceof Resource) {
-			addPropertyNode(model, res, prop, (Resource) value);
-		} else {
-			Literal node = ResourceFactory.createTypedLiteral(value);
-			addPropertyNode(model, res, prop, node);
-		}
-	}
-
-	private static void addTweeterPropertyNode(Model model, Resource res, String property, Object value) {
-		addPropertyNode(model, Constants.SEMANTIC_TWEETER_NS, res, property, value);
-	}
-
-	private static void addTweetPropertyNode(Model model, Resource res, String property, Object value) {
-		addPropertyNode(model, Constants.SEMANTIC_TWEET_NS, res, property, value);
-	}
-
-	private static void addPropertyNode(Model model, Resource res, Property prop, RDFNode node) {
-		model.add(res, prop, node);
 	}
 }
