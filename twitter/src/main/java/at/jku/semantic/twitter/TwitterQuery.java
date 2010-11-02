@@ -50,7 +50,7 @@ public class TwitterQuery {
 		for (File modelFile : xmlFiles) {
 			Model loadedModel = fileManager.loadModel(modelFile.toURI().toString());
 			model.add(loadedModel);
-			System.out.println("adding model " + modelFile.getName());
+			// System.out.println("adding model " + modelFile.getName());
 		}
 
 		return model;
