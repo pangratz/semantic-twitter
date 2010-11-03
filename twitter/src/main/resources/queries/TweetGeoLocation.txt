@@ -1,0 +1,10 @@
+PREFIX stweeter: <http://twitter.com/semantic/Tweeter#>
+PREFIX stweet: <http://twitter.com/semantic/Tweet#>
+SELECT ?nick ?tweet ?loc
+WHERE {
+ ?tweeter stweeter:nick ?nick .
+ ?tweeter stweeter:hasTweet ?tweet .
+ ?tweet stweet:hasGeoLocation ?hasLoc .
+ ?tweet stweet:geoLocation ?loc
+ FILTER ( ?hasLoc = true )
+}

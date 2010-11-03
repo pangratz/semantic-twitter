@@ -1,0 +1,9 @@
+PREFIX stweeter: <http://twitter.com/semantic/Tweeter#>
+SELECT ?name ?followerCount ?friendsCount ?favoritesCount ?statusCount
+WHERE {
+	?x stweeter:nick ?name .
+	?x stweeter:followerCount ?followerCount .
+	?x stweeter:friendsCount ?friendsCount .
+	?x stweeter:favoritesCount ?favoritesCount .
+	?x stweeter:statusCount ?statusCount .
+}

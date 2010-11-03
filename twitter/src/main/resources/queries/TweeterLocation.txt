@@ -1,0 +1,9 @@
+PREFIX stweeter: <http://twitter.com/semantic/Tweeter#>
+SELECT ?name ?location ?timezone
+WHERE {
+	?x stweeter:nick ?name .
+	OPTIONAL {
+		?x stweeter:location ?location .
+		?x stweeter:timezone ?timezone .
+	}
+}

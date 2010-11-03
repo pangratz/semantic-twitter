@@ -1,0 +1,9 @@
+PREFIX stweeter: <http://twitter.com/semantic/Tweeter#>
+PREFIX stweet: <http://twitter.com/semantic/Tweet#>
+SELECT ?tweeterNick ?tweet
+WHERE {
+ ?tweeter stweeter:hasTweet ?tweet .
+ ?tweeter stweeter:nick ?tweeterNick .
+ ?tweet stweet:mentionedUser ?me .
+ FILTER regex(str(?me), "pangratz")
+}
