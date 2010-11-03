@@ -45,7 +45,7 @@ public class TwitterRDFExtractor implements Constants {
 	public Model extractModel(Twitter twitter, User user) throws TwitterException {
 		OntModel model = createOntologyModel();
 
-		Resource userIdRes = createUserResource(model, user);
+		Resource userIdRes = createTweeterResource(model, user);
 
 		addTweeterProperty(model, userIdRes, SEMANTIC_TWEETER_NICK, user.getScreenName());
 		addTweeterProperty(model, userIdRes, SEMANTIC_TWEETER_STATUS_COUNT, user.getStatusesCount());
@@ -76,8 +76,7 @@ public class TwitterRDFExtractor implements Constants {
 			Iterator<Status> statusIt = latestTweets.iterator();
 			while (statusIt.hasNext()) {
 				Status status = statusIt.next();
-				long statusId = status.getId();
-				Resource statusRes = ResourceFactory.createResource(Constants.SEMANTIC_TWEET_NS + statusId);
+				Resource statusRes = createTweetResource(model, status);
 
 				Property hasTweetProp = ResourceFactory.createProperty(Constants.SEMANTIC_TWEETER_NS, "hasTweet");
 				model.add(userIdRes, hasTweetProp, statusRes);
@@ -108,7 +107,7 @@ public class TwitterRDFExtractor implements Constants {
 				boolean hasUserMentions = (userMentions != null) && (userMentions.length > 0);
 				addTweetProperty(model, statusRes, SEMANTIC_TWEET_HAS_USER_MENTIONS, hasUserMentions);
 				for (User mentionedUser : userMentions) {
-					addTweetProperty(model, statusRes, SEMANTIC_TWEET_MENTIONED_USER, createUserResource(model, mentionedUser));
+					addTweetProperty(model, statusRes, SEMANTIC_TWEET_MENTIONED_USER, createTweeterResource(model, mentionedUser));
 				}
 
 				Date createdAt = status.getCreatedAt();
@@ -242,8 +241,13 @@ public class TwitterRDFExtractor implements Constants {
 		return ns + localName;
 	}
 
-	private Resource createUserResource(OntModel model, User user) {
+	private Resource createTweeterResource(OntModel model, User user) {
 		Resource clazz = model.getResource(createUri(SEMANTIC_TWEETER_NS, SEMANTIC_TWEETER_CLASS));
 		return model.createResource(Constants.SEMANTIC_TWEETER_NS + user.getScreenName(), clazz);
+	}
+
+	private Resource createTweetResource(OntModel model, Status status) {
+		Resource clazz = model.getResource(createUri(SEMANTIC_TWEET_NS, SEMANTIC_TWEET_CLASS));
+		return model.createResource(Constants.SEMANTIC_TWEET_NS + status.getId(), clazz);
 	}
 }
