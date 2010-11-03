@@ -33,13 +33,13 @@ import com.hp.hpl.jena.vocabulary.XSD;
 
 public class TwitterRDFExtractor implements Constants {
 
-	public TwitterRDFExtractor(String consumerKey, String consumerSecret, String token, String tokenSecret) throws Exception {
+	public TwitterRDFExtractor(File modelDir, String consumerKey, String consumerSecret, String token, String tokenSecret) throws Exception {
 		super();
 
 		AccessToken accessToken = new AccessToken(token, tokenSecret);
 		Twitter twitter = new TwitterFactory().getOAuthAuthorizedInstance(consumerKey, consumerSecret, accessToken);
 
-		createModels(twitter);
+		createModels(twitter, modelDir);
 	}
 
 	public Model extractModel(Twitter twitter, User user) throws TwitterException {
@@ -122,7 +122,7 @@ public class TwitterRDFExtractor implements Constants {
 		return model;
 	}
 
-	public void createModels(Twitter twitter) throws Exception {
+	public void createModels(Twitter twitter, File modelDir) throws Exception {
 		// iterate over each friend and create a RDF model for each one
 		IDs friendsIDs = twitter.getFriendsIDs();
 		int[] iDs = friendsIDs.getIDs();
@@ -133,7 +133,7 @@ public class TwitterRDFExtractor implements Constants {
 				try {
 
 					User user = twitter.showUser(id);
-					File userFile = new File("userModels", user.getScreenName() + ".xml");
+					File userFile = new File(modelDir, user.getScreenName() + ".xml");
 					if (userFile.exists()) {
 						System.out.println("skipping user " + user.getScreenName() + " because the model already exists");
 						ok = true;

@@ -2,8 +2,6 @@ package at.jku.semantic.twitter.queries;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.LinkedList;
-import java.util.List;
 
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
@@ -32,22 +30,6 @@ public abstract class TwitterQuery {
 		}
 
 		return model;
-	}
-
-	public static void main(String[] args) throws Exception {
-
-		final Model model = TwitterQuery.loadModels(new File("userModels"));
-
-		List<Class<? extends TwitterQuery>> queries = new LinkedList<Class<? extends TwitterQuery>>();
-		queries.add(TimezoneQuery.class);
-		queries.add(TweeterStatisticQuery.class);
-		queries.add(TweetsMentioningMeQuery.class);
-		queries.add(GeoLocationQuery.class);
-
-		for (Class<? extends TwitterQuery> queryClass : queries) {
-			TwitterQuery twitterQuery = queryClass.newInstance();
-			twitterQuery.executeQuery(model);
-		}
 	}
 
 	public final void executeQuery(Model model) {
