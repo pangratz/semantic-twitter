@@ -133,7 +133,7 @@ public class TwitterRDFExtractor implements Constants {
 				try {
 
 					User user = twitter.showUser(id);
-					File userFile = new File("userModels2", user.getScreenName() + ".xml");
+					File userFile = new File("userModels", user.getScreenName() + ".xml");
 					if (userFile.exists()) {
 						System.out.println("skipping user " + user.getScreenName() + " because the model already exists");
 						ok = true;
@@ -147,8 +147,8 @@ public class TwitterRDFExtractor implements Constants {
 						ok = true;
 					}
 				} catch (Exception ex) {
-					System.out.println(" exception --> wait for 30 seconds");
-					Thread.sleep(1000 * 30);
+					System.out.println(" exception --> wait for 1 second");
+					Thread.sleep(1000 * 1);
 				}
 			} while (!ok);
 
@@ -158,8 +158,12 @@ public class TwitterRDFExtractor implements Constants {
 	private void add(OntModel model, Resource res, String ns, String localName, Object val, String typeURI) {
 		if (val != null) {
 			Property prop = model.getProperty(ns, localName);
-			Literal lit = model.createTypedLiteral(val, typeURI);
-			model.add(res, prop, lit);
+			Literal lit = model.createTypedLiteral(val);
+			if (val instanceof Resource) {
+				model.add(res, prop, (Resource) val);
+			} else {
+				model.add(res, prop, lit);
+			}
 		}
 	}
 
@@ -177,7 +181,7 @@ public class TwitterRDFExtractor implements Constants {
 
 	private void addTweetProperty(OntModel model, Resource res, String localName, Object val) {
 		String typeURI = createUri(SEMANTIC_TWEET_NS, localName);
-		add(model, res, SEMANTIC_TWEETER_NS, localName, val, typeURI);
+		add(model, res, SEMANTIC_TWEET_NS, localName, val, typeURI);
 	}
 
 	private OntModel createOntologyModel() {
